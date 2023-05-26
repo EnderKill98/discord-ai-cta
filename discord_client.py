@@ -96,7 +96,7 @@ async def chat_command(interaction: discord.Interaction, message: str):
 
     content_prefix=f"**{your_name}:** {cleaned_message}\n**Me:** "
     #await interaction.response.send_message(content=content_prefix + "*Sending…*", view=StopButton())
-    await interaction.response.send_message(content=content_prefix + "*Sending…*", allowed_mentions=allowed_mentions, silent=True)
+    await interaction.response.send_message(content=shorten_output(content_prefix + "*Sending…*"), allowed_mentions=allowed_mentions, silent=True)
     #await interaction.response.send_message(content="*Sending…*", view=StopButton())
     #embed = discord.Embed(color=0xF0F0F0)
     #embed.add_field(name=your_name, value=message, inline=False)
@@ -127,12 +127,19 @@ async def chat_command(interaction: discord.Interaction, message: str):
             #    await interaction.edit_original_response(embed=embed, view=None)
             #else:
             #    await interaction.edit_original_response(embed=embed)
-            await interaction.edit_original_response(content=content_prefix + output + (" …" if show_typing_indicator else ""), **maybe_remove_view, allowed_mentions=allowed_mentions)
+            await interaction.edit_original_response(content=shorten_output(content_prefix + output + (" …" if show_typing_indicator else "")), **maybe_remove_view, allowed_mentions=allowed_mentions)
     except BaseException as ex:
         logger.exception("Failed generating output")
-        await interaction.edit_original_response(content=("" if last_output is None else content_prefix + last_output + "\n") + "**ERROR: **```" + str(ex) + "```")
+        await interaction.edit_original_response(content=shorten_output(("" if last_output is None else content_prefix + last_output + "\n") + "**ERROR: **```" + str(ex) + "```"))
     occupied = False
     occupied_by_username = None
+
+def shorten_output(output):
+    MAX_LEN = 2000
+    if len(output) > MAX_LEN:
+        suffix = "...and XXXXXX more characters"
+        output = output[:MAX_LEN-len(suffix)] + suffix.replace("XXXXXX", str(len(output) - (MAX_LEN-len(suffix))))
+    return output
 
 def generalize_username(discord_username):
     if discord_username.startswith("@"):

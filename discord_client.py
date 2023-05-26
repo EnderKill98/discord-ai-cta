@@ -27,13 +27,22 @@ logging.getLogger("gradio_chat").setLevel(logging.INFO)
 
 # Creating client
 logger.debug("Starting bot...")
-client = discord.Client(intents=discord.Intents.none())
+client = discord.Client(intents=discord.Intents.default())
 @client.event
 async def on_ready():
     logger.info(f"Logged in as {client.user}")
+    logger.info(f"Currently in {len(client.guilds)} guild(s): {', '.join([ f'{guild} (Id: {guild.id})' for guild in client.guilds ])}")
     synced = await tree.sync()
     logger.info(f"Synced {len(synced)} commands")
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="/chat"))
+
+@client.event
+async def on_guild_join(guild: discord.Guild):
+    logger.info(f"Joined guild {guild} (Id: {guild.id})")
+
+@client.event
+async def on_guild_remove(guild: discord.Guild):
+    logger.info(f"Removed from guild {guild} (Id: {guild.id})")
 
 # Adding commands
 tree = app_commands.CommandTree(client)
@@ -47,6 +56,7 @@ class StopButton(discord.ui.View):
 
 occupied = False
 occupied_by_username = None
+occupied_in_channel = None
 
 @tree.command(name="chat", description="Send a message to the bot and get a response!")
 async def chat_command(interaction: discord.Interaction, message: str):
@@ -55,8 +65,12 @@ async def chat_command(interaction: discord.Interaction, message: str):
     allowed_mentions = discord.AllowedMentions(everyone=False, users=False, roles=False, replied_user=False)
     global occupied, occupied_by_username
     logger.info(f"{interaction.user} executed /chat")
+    if interaction.guild_id is None:
+        logger.warning(f"Command was triggered in DMs from {interaction.user} (Id: {interaction.user.id})")
+        await interaction.response.send_message(content="*CTA is very shy and doesn't want to respond in private DMs.*")
+        return
     if len(WHITELISTED_GUILD_IDS) > 0 and interaction.guild_id not in WHITELISTED_GUILD_IDS:
-        logger.warning(f"Command was triggered from unknown Guild ID {interaction.guild_id} by {interaction.user}")
+        logger.warning(f"Command was triggered from non-whitelisted Guild {interaction.guild} (Id: {interaction.guild_id}) by {interaction.user} (Id: {interaction.user.id})")
         await interaction.response.send_message(content="*CTA wonders what strange, unknown Discord server this is.*")
         return
     your_name = generalize_username(str(interaction.user))
@@ -88,11 +102,12 @@ async def chat_command(interaction: discord.Interaction, message: str):
             await interaction.edit_original_response(content=response + "\n**ERROR**: ```" + str(ex) + "```")
         return
     if occupied:
-        await interaction.response.send_message(content="*CTA is currently occupied answering" + ("" if occupied_by_username is None else " " + occupied_by_username) + " and doesn't notice your message*")
+        await interaction.response.send_message(content="*CTA is currently occupied answering" + ("" if occupied_by_username is None else " " + occupied_by_username) + ("" if occupied_in_channel is None else " in " + occupied_in_channel) + " and doesn't notice your message*", allowed_mentions=allowed_mentions)
         return
-    logger.info("Processing message: " + message)
+    logger.info(f"Processing message from {interaction.user} (Id: {interaction.user_id}) in channel {interaction.channel} (Id: {interaction.channel_id}): {message}")
     occupied = True
     occupied_by_username = str(interaction.user)
+    occupied_in_channel = interaction.channel.mention
 
     content_prefix=f"**{your_name}:** {cleaned_message}\n**Me:** "
     #await interaction.response.send_message(content=content_prefix + "*Sending…*", view=StopButton())
@@ -130,13 +145,18 @@ async def chat_command(interaction: discord.Interaction, message: str):
             await interaction.edit_original_response(content=shorten_output(content_prefix + output + (" …" if show_typing_indicator else "")), **maybe_remove_view, allowed_mentions=allowed_mentions)
     except BaseException as ex:
         logger.exception("Failed generating output")
-        await interaction.edit_original_response(content=shorten_output(("" if last_output is None else content_prefix + last_output + "\n") + "**ERROR: **```" + str(ex) + "```"))
+        try: # Prevent goofs trying to occupy the bot forever
+            await interaction.edit_original_response(content=shorten_output(("" if last_output is None else content_prefix + last_output + "\n") + "**ERROR: **```" + str(ex) + "```"))
+        except:
+            pass
     occupied = False
     occupied_by_username = None
+    occupied_in_channel = None
 
 def shorten_output(output):
     MAX_LEN = 2000
     if len(output) > MAX_LEN:
+        logger.warning(f"Some output would be longer than {MAX_LEN} chars and will be shortened!")
         suffix = "...and XXXXXX more characters"
         output = output[:MAX_LEN-len(suffix)] + suffix.replace("XXXXXX", str(len(output) - (MAX_LEN-len(suffix))))
     return output

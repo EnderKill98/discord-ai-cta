@@ -96,7 +96,7 @@ async def chat_command(interaction: discord.Interaction, message: str):
 
     content_prefix=f"**{your_name}:** {cleaned_message}\n**Me:** "
     #await interaction.response.send_message(content=content_prefix + "*Sending…*", view=StopButton())
-    await interaction.response.send_message(content=content_prefix + "*Sending…*", allowed_mentions=allowed_mentions)
+    await interaction.response.send_message(content=content_prefix + "*Sending…*", allowed_mentions=allowed_mentions, silent=True)
     #await interaction.response.send_message(content="*Sending…*", view=StopButton())
     #embed = discord.Embed(color=0xF0F0F0)
     #embed.add_field(name=your_name, value=message, inline=False)

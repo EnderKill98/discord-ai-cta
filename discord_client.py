@@ -14,6 +14,7 @@ import gradio_chat
 
 load_dotenv()
 TOKEN = os.environ['DISCORD_BOT_TOKEN']
+STREAM_MIN_DELAY_SECS = float(os.environ['DISCORD_STREAM_MIN_DELAY_SECS']) if os.environ.get('DISCORD_STREAM_MIN_DELAY_SECS', '') else 0
 WHITELISTED_GUILD_IDS = list(map(int, filter(lambda id: id, os.environ.get('DISCORD_WHITELISTED_GUILD_IDS', '').split(','))))
 
 # Logging
@@ -106,11 +107,11 @@ async def chat_command(interaction: discord.Interaction, message: str):
     try:
         #chat_message = generalize_username(str(interaction.user)) + ": " + message
         chat_message = message
-        #last_update_at = None
+        last_update_at = None
         async for (output, completed) in gradio_chat.configure_send_and_receive(chat_message, your_name=your_name):
-            #if not completed and last_update_at is not None and time() - last_update_at < 1.0:
-            #    continue
-            #last_update_at = time()
+            if not completed and last_update_at is not None and time() - last_update_at < STREAM_MIN_DELAY_SECS and STREAM_MIN_DELAY_SECS > 0:
+                continue
+            last_update_at = time()
             #logger.info("Response: " + output + ("" if completed else " (generating)"))
             if completed:
                 logger.info("Completed response: " + output)

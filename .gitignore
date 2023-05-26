@@ -1,0 +1,9 @@
+# Common IDEs
+.vscode/
+.idea/
+
+# Secrets
+.env
+
+# Caches
+__pycache__/

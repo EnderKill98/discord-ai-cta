@@ -1,0 +1,17 @@
+# Logging
+rich
+
+# HTML Parsing
+lxml
+beautifulsoup4
+# HTML to markdown
+html2text
+
+# Discord API
+discord.py
+
+# Websocket support for server
+websockets
+
+# Support for .env if not in docker
+python-dotenv

@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  client:
+    build: .
+    restart: unless-stopped
+    env_file: ./.env
+    stop_signal: SIGINT

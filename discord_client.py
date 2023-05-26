@@ -14,7 +14,7 @@ import gradio_chat
 
 load_dotenv()
 TOKEN = os.environ['DISCORD_BOT_TOKEN']
-# https://discord.com/api/oauth2/authorize?client_id=1110974994982371400&permissions=67108864&scope=bot
+WHITELISTED_GUILD_IDS = list(map(int, filter(lambda id: id, os.environ.get('DISCORD_WHITELISTED_GUILD_IDS', '').split(','))))
 
 # Logging
 FORMAT = "%(name)-16s | %(message)s"
@@ -54,7 +54,7 @@ async def chat_command(interaction: discord.Interaction, message: str):
     allowed_mentions = discord.AllowedMentions(everyone=False, users=False, roles=False, replied_user=False)
     global occupied, occupied_by_username
     logger.info(f"{interaction.user} executed /chat")
-    if interaction.guild_id not in [ 269605760428802065, 984582390112485496 ]: # Ran Community, SSI
+    if len(WHITELISTED_GUILD_IDS) > 0 and interaction.guild_id not in WHITELISTED_GUILD_IDS:
         logger.warning(f"Command was triggered from unknown Guild ID {interaction.guild_id} by {interaction.user}")
         await interaction.response.send_message(content="*CTA wonders what strange, unknown Discord server this is.*")
         return

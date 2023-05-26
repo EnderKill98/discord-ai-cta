@@ -102,6 +102,7 @@ async def chat_command(interaction: discord.Interaction, message: str):
             await interaction.edit_original_response(content=response + "\n**ERROR**: ```" + str(ex) + "```")
         return
     if occupied:
+        logger.warning(f"Ignored message from {interaction.user} (Id: {interaction.user.id}) in channel {interaction.channel} (Id: {interaction.channel_id}) because already occupied.")
         await interaction.response.send_message(content="*CTA is currently occupied answering" + ("" if occupied_by_user is None else " " + occupied_by_user) + ("" if occupied_in_channel is None else " in " + occupied_in_channel) + " and doesn't notice your message*", allowed_mentions=allowed_mentions)
         return
     logger.info(f"Processing message from {interaction.user} (Id: {interaction.user.id}) in channel {interaction.channel} (Id: {interaction.channel_id}): {message}")

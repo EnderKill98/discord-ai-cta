@@ -9,6 +9,9 @@ A lot of values are still hard copied into here and should be made configurable
 at some point (or request state from webui). Using the webui at the same time
 may or may not mess up state as they seem somewhat seperated by the different
 session hashes.
+
+TODO: Add an option to use the proper streaming chat api. Currently using this
+      hack because for some reason I can't get the api to run on my system.
 '''
 
 import json

@@ -55,7 +55,7 @@ class StopButton(discord.ui.View):
         await gradio_chat.stop(generalize_username(str(interaction.user)))
 
 occupied = False
-occupied_by_username = None
+occupied_by_user = None
 occupied_in_channel = None
 
 @tree.command(name="chat", description="Send a message to the bot and get a response!")
@@ -63,7 +63,7 @@ async def chat_command(interaction: discord.Interaction, message: str):
     #message = discord.utils.escape_mentions(discord.utils.remove_markdown(message))
     cleaned_message = discord.utils.escape_markdown(message)
     allowed_mentions = discord.AllowedMentions(everyone=False, users=False, roles=False, replied_user=False)
-    global occupied, occupied_by_username
+    global occupied, occupied_by_user, occupied_in_channel
     logger.info(f"{interaction.user} executed /chat")
     if interaction.guild_id is None:
         logger.warning(f"Command was triggered in DMs from {interaction.user} (Id: {interaction.user.id})")
@@ -102,11 +102,11 @@ async def chat_command(interaction: discord.Interaction, message: str):
             await interaction.edit_original_response(content=response + "\n**ERROR**: ```" + str(ex) + "```")
         return
     if occupied:
-        await interaction.response.send_message(content="*CTA is currently occupied answering" + ("" if occupied_by_username is None else " " + occupied_by_username) + ("" if occupied_in_channel is None else " in " + occupied_in_channel) + " and doesn't notice your message*", allowed_mentions=allowed_mentions)
+        await interaction.response.send_message(content="*CTA is currently occupied answering" + ("" if occupied_by_user is None else " " + occupied_by_user) + ("" if occupied_in_channel is None else " in " + occupied_in_channel) + " and doesn't notice your message*", allowed_mentions=allowed_mentions)
         return
-    logger.info(f"Processing message from {interaction.user} (Id: {interaction.user_id}) in channel {interaction.channel} (Id: {interaction.channel_id}): {message}")
+    logger.info(f"Processing message from {interaction.user} (Id: {interaction.user.id}) in channel {interaction.channel} (Id: {interaction.channel_id}): {message}")
     occupied = True
-    occupied_by_username = str(interaction.user)
+    occupied_by_user = interaction.user.mention
     occupied_in_channel = interaction.channel.mention
 
     content_prefix=f"**{your_name}:** {cleaned_message}\n**Me:** "
@@ -150,7 +150,7 @@ async def chat_command(interaction: discord.Interaction, message: str):
         except:
             pass
     occupied = False
-    occupied_by_username = None
+    occupied_by_user = None
     occupied_in_channel = None
 
 def shorten_output(output):
